@@ -34,6 +34,7 @@ import io.seata.common.Constants;
 import io.seata.common.holder.ObjectHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -56,6 +57,13 @@ public class StringUtilsTest {
         assertThat(StringUtils.isNullOrEmpty("abc")).isFalse();
         assertThat(StringUtils.isNullOrEmpty("")).isTrue();
         assertThat(StringUtils.isNullOrEmpty(" ")).isFalse();
+    }
+
+    @Test
+    public void testHump2Line(){
+        assertThat(StringUtils.hump2Line("abc-d").equals("abcD")).isTrue();
+        assertThat(StringUtils.hump2Line("aBc").equals("a-bc")).isTrue();
+        assertThat(StringUtils.hump2Line("abc").equals("abc")).isTrue();
     }
 
     @Test
@@ -117,7 +125,12 @@ public class StringUtilsTest {
         //case: Charset
         Assertions.assertEquals("UTF-8", StringUtils.toString(StandardCharsets.UTF_8));
         //case: Thread
-        Assertions.assertEquals("Thread[main,5,main]", StringUtils.toString(Thread.currentThread()));
+        try {
+            Assertions.assertEquals("Thread[main,5,main]", StringUtils.toString(Thread.currentThread()));
+        } catch (AssertionFailedError e) {
+            // for java21 and above
+            Assertions.assertEquals("Thread[#" + Thread.currentThread().getId() + ",main,5,main]", StringUtils.toString(Thread.currentThread()));
+        }
 
         //case: Date
         Date date = new Date(2021 - 1900, 6 - 1, 15);
@@ -157,11 +170,16 @@ public class StringUtilsTest {
         list.add(list);
         Assertions.assertEquals("[\"xxx\", 111, (this ArrayList)]", StringUtils.toString(list));
 
-        //case: Array
+        //case: String Array
         String[] strArr = new String[2];
         strArr[0] = "11";
         strArr[1] = "22";
         Assertions.assertEquals("[\"11\", \"22\"]", StringUtils.toString(strArr));
+        //case: int Array
+        int[] intArr = new int[2];
+        intArr[0] = 11;
+        intArr[1] = 22;
+        Assertions.assertEquals("[11, 22]", StringUtils.toString(intArr));
         //case: Array, and cycle dependency
         Object[] array = new Object[3];
         array[0] = 1;

@@ -75,7 +75,7 @@ public class DataBaseLockManagerImplTest {
                 s.execute("drop table lock_table");
             } catch (Exception e) {
             }
-            s.execute("CREATE TABLE lock_table ( xid varchar(96),  transaction_id long , branch_id long, resource_id varchar(32) ,table_name varchar(32) ,pk varchar(32)  ,  row_key  varchar(128) primary key not null, gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6)) ");
+            s.execute("CREATE TABLE lock_table ( xid varchar(96) , transaction_id long , branch_id long, resource_id varchar(32) ,table_name varchar(32) ,pk varchar(32)  ,  row_key  varchar(128) primary key not null , status  integer , gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6)) ");
             System.out.println("create table lock_table success.");
 
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public class DataBaseLockManagerImplTest {
             if(rs.next()){
                 Assertions.assertTrue(true);
             }else {
-                Assertions.assertTrue(false);
+                Assertions.fail();
             }
             rs.close();
 
@@ -117,7 +117,7 @@ public class DataBaseLockManagerImplTest {
                 Assertions.assertTrue(true);
                 Assertions.assertEquals(4, rs.getInt(1));
             }else {
-                Assertions.assertTrue(false);
+                Assertions.fail();
             }
             rs.close();
 
@@ -154,7 +154,7 @@ public class DataBaseLockManagerImplTest {
         branchSession3.setResourceId("abcss");
         branchSession3.setLockKey("t1:53,14;t2:21,45");
 
-        Assertions.assertTrue(!lockManager.acquireLock(branchSession3));
+        Assertions.assertFalse(lockManager.acquireLock(branchSession3));
 
         String delSql = "delete from lock_table where xid in( 'abc-123:65867978' , 'abc-123:65867978' , 'abc-123:5678789'  )"  ;
         Connection conn =  null;
@@ -189,7 +189,7 @@ public class DataBaseLockManagerImplTest {
             if(rs.next()){
                 Assertions.assertTrue(true);
             }else {
-                Assertions.assertTrue(false);
+                Assertions.fail();
             }
             rs.close();
 
@@ -198,7 +198,7 @@ public class DataBaseLockManagerImplTest {
                 Assertions.assertTrue(true);
                 Assertions.assertEquals(4, rs.getInt(1));
             }else {
-                Assertions.assertTrue(false);
+                Assertions.fail();
             }
             rs.close();
 
@@ -207,7 +207,7 @@ public class DataBaseLockManagerImplTest {
 
             rs = conn.createStatement().executeQuery(sql);
             if(rs.next()){
-                Assertions.assertTrue(false);
+                Assertions.fail();
             }else {
                 Assertions.assertTrue(true);
             }
@@ -248,7 +248,8 @@ public class DataBaseLockManagerImplTest {
         branchSession3.setResourceId("abcss");
         branchSession3.setLockKey("t2:1,12");
 
-        Assertions.assertTrue(!lockManager.isLockable(branchSession3.getXid(), branchSession3.getResourceId(), branchSession3.getLockKey()));
+        Assertions.assertFalse(lockManager.isLockable(branchSession3.getXid(), branchSession3.getResourceId(),
+            branchSession3.getLockKey()));
 
         String delSql = "delete from lock_table where xid in( 'abc-123:56877898' , 'abc-123:56877898' , 'abc-123:4575614354'  )"  ;
         Connection conn =  null;

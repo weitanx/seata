@@ -164,14 +164,19 @@ public class DefaultRemotingParser {
      * @return remoting desc
      */
     public RemotingDesc parserRemotingServiceInfo(Object bean, String beanName, RemotingParser remotingParser) {
-        RemotingDesc remotingBeanDesc = remotingParser.getServiceDesc(bean, beanName);
+        RemotingDesc remotingBeanDesc = null;
+        try {
+            remotingBeanDesc = remotingParser.getServiceDesc(bean, beanName);
+        } catch (Throwable ignore) {
+            //ignore exception. It's not possible to judge whether the TCC mode was used.
+        }
         if (remotingBeanDesc == null) {
             return null;
         }
         remotingServiceMap.put(beanName, remotingBeanDesc);
 
-        Class<?> interfaceClass = remotingBeanDesc.getInterfaceClass();
-        Method[] methods = interfaceClass.getMethods();
+        Class<?> serviceClass = remotingBeanDesc.getServiceClass();
+        Method[] methods = serviceClass.getMethods();
         if (remotingParser.isService(bean, beanName)) {
             try {
                 //service bean, registry resource
@@ -184,10 +189,10 @@ public class DefaultRemotingParser {
                         tccResource.setTargetBean(targetBean);
                         tccResource.setPrepareMethod(m);
                         tccResource.setCommitMethodName(twoPhaseBusinessAction.commitMethod());
-                        tccResource.setCommitMethod(interfaceClass.getMethod(twoPhaseBusinessAction.commitMethod(),
+                        tccResource.setCommitMethod(serviceClass.getMethod(twoPhaseBusinessAction.commitMethod(),
                                 twoPhaseBusinessAction.commitArgsClasses()));
                         tccResource.setRollbackMethodName(twoPhaseBusinessAction.rollbackMethod());
-                        tccResource.setRollbackMethod(interfaceClass.getMethod(twoPhaseBusinessAction.rollbackMethod(),
+                        tccResource.setRollbackMethod(serviceClass.getMethod(twoPhaseBusinessAction.rollbackMethod(),
                                 twoPhaseBusinessAction.rollbackArgsClasses()));
                         // set argsClasses
                         tccResource.setCommitArgsClasses(twoPhaseBusinessAction.commitArgsClasses());

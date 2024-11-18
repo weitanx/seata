@@ -15,20 +15,26 @@
  */
 package io.seata.rm.datasource.exec;
 
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+
 import io.seata.common.exception.NotSupportYetException;
 import io.seata.common.loader.EnhancedServiceLoader;
 import io.seata.common.util.CollectionUtils;
 import io.seata.core.context.RootContext;
 import io.seata.core.model.BranchType;
 import io.seata.rm.datasource.StatementProxy;
-import io.seata.rm.datasource.exec.mysql.MySQLInsertOrUpdateExecutor;
+import io.seata.rm.datasource.exec.mariadb.MariadbInsertOnDuplicateUpdateExecutor;
+import io.seata.rm.datasource.exec.mariadb.MariadbUpdateJoinExecutor;
+import io.seata.rm.datasource.exec.mysql.MySQLInsertOnDuplicateUpdateExecutor;
+import io.seata.rm.datasource.exec.mysql.MySQLUpdateJoinExecutor;
+import io.seata.rm.datasource.exec.polardbx.PolarDBXInsertOnDuplicateUpdateExecutor;
+import io.seata.rm.datasource.exec.polardbx.PolarDBXUpdateJoinExecutor;
 import io.seata.rm.datasource.sql.SQLVisitorFactory;
 import io.seata.sqlparser.SQLRecognizer;
+import io.seata.sqlparser.SQLType;
 import io.seata.sqlparser.util.JdbcConstants;
-
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
 
 /**
  * The type Execute template.
@@ -103,10 +109,35 @@ public class ExecuteTemplate {
                         executor = new SelectForUpdateExecutor<>(statementProxy, statementCallback, sqlRecognizer);
                         break;
                     case INSERT_ON_DUPLICATE_UPDATE:
-                        if (JdbcConstants.MYSQL.equals(dbType)) {
-                            executor = new MySQLInsertOrUpdateExecutor(statementProxy,statementCallback,sqlRecognizer);
-                        } else {
-                            throw new NotSupportYetException(dbType + " not support to INSERT_ON_DUPLICATE_UPDATE");
+                        switch (dbType) {
+                            case JdbcConstants.MYSQL:
+                                executor =
+                                        new MySQLInsertOnDuplicateUpdateExecutor(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            case JdbcConstants.MARIADB:
+                                executor =
+                                        new MariadbInsertOnDuplicateUpdateExecutor(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            case JdbcConstants.POLARDBX:
+                                executor = new PolarDBXInsertOnDuplicateUpdateExecutor(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            default:
+                                throw new NotSupportYetException(dbType + " not support to INSERT_ON_DUPLICATE_UPDATE");
+                        }
+                        break;
+                    case UPDATE_JOIN:
+                        switch (dbType) {
+                            case JdbcConstants.MYSQL:
+                                executor = new MySQLUpdateJoinExecutor<>(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            case JdbcConstants.MARIADB:
+                                executor = new MariadbUpdateJoinExecutor<>(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            case JdbcConstants.POLARDBX:
+                                executor = new PolarDBXUpdateJoinExecutor<>(statementProxy, statementCallback, sqlRecognizer);
+                                break;
+                            default:
+                                throw new NotSupportYetException(dbType + " not support to " + SQLType.UPDATE_JOIN.name());
                         }
                         break;
                     default:
